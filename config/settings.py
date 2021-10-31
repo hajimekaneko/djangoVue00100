@@ -74,13 +74,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-if DEBUG:
-    INSTALLED_APPS += ['corsheaders']
-    MIDDLEWARE = ['corsheaders.middleware.CorsMiddleware'] + MIDDLEWARE
-    CORS_ORIGIN_WHITELIST = (
-        'http://172.17.0.10:8080',
-        'http://localhost:8080',
-    )
+
 
 
 # Database
@@ -143,3 +137,11 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
+if DEBUG:
+    INSTALLED_APPS += ['corsheaders']
+    MIDDLEWARE = ['corsheaders.middleware.CorsMiddleware'] + MIDDLEWARE
+    CORS_ORIGIN_WHITELIST = (
+        'http://192.168.136.96:8080',
+        'http://localhost:8080',
+    )
+    CORS_ALLOW_CREDENTIALS = True  # これを追記

@@ -1,41 +1,91 @@
 <template>
-    <main class="container">
+    <div :key="getKey" class="container">
         <p id="lead">{{postCount}}件中 {{postRangeFirst}}~{{postRangeLast}}件を一覧表示</p>
         <section>
-            <article class="post" v-for="post of postList" :key="post.id">
-                <figure>
-                    <img :src="post.thumbnail" :alt="post.title" class="thumbnail">
-                </figure>
-                <p class="post-category" :style="{'color': post.category.color}">{{post.category.name}}</p>
-                <h2 class="post-title">{{post.title}}</h2>
-                <p class="post-lead">{{post.lead_text}}</p>
-            </article>
+            <router-link :to="{name: 'detail', params: {id: post.id}}" v-for="post of postList" :key="post.id"
+                         class="post">
+                <article>
+                    <figure>
+                        <img :src="post.thumbnail" :alt="post.title" class="thumbnail">
+                    </figure>
+                    <p class="post-category" :style="{'color': post.category.color}">{{post.category.name}}</p>
+                    <h2 class="post-title">{{post.title}}</h2>
+                    <p class="post-lead">{{post.lead_text}}</p>
+                </article>
+            </router-link>
         </section>
         <hr class="divider">
         <nav id="page">
-            <a v-if="hasPrevious" @click="getPostPrevious" id="back"><img src=""></a>
+            <router-link v-if="hasPrevious" :to="getPostPreviousURL" id="back"><font-awesome-icon icon="chevron-left" />
+            </router-link>
             <span>Page {{postCurrentPageNumber}}</span>
-            <a v-if="hasNext" @click="getPostNext" id="next"><img src=""></a>
+            <router-link v-if="hasNext" :to="getPostNextURL" id="next"><font-awesome-icon icon="chevron-right" /></router-link>
         </nav>
-    </main>
+    </div>
 </template>
+
+
+
+
+
 
 <script>
     import {mapGetters, mapActions} from 'vuex'
-    import {UPDATE_POSTS} from "../store/mutation-types";
+    import {UPDATE_POSTS} from "@/store/mutation-types";
 
     export default {
         name: 'post-list',
+        watch: {
+            '$route'() {
+                this.getPosts()
+            }
+        },
+        created() {
+            this.getPosts()
+        },
+        mounted() {
+            document.title = `ブログ`
+            document.querySelector('meta[name="description"]').setAttribute('content', '日々の雑記')
+            },
         computed: {
             ...mapGetters([
                 'postList', 'postCount', 'postRangeFirst', 'postRangeLast',
                 'postCurrentPageNumber', 'hasPrevious', 'hasNext', 'getPreviousURL', 'getNextURL'
             ]),
+            getPostPreviousURL() {
+                const url = new URL(this.getPreviousURL)
+                const keyword = url.searchParams.get('keyword') || ''
+                const category = url.searchParams.get('category') || ''
+                const page = url.searchParams.get('page') || 1
+                return this.$router.resolve({
+                    name: 'posts',
+                    query: {keyword, category, page}
+                }).route.fullPath
+            },
+            getPostNextURL() {
+                const url = new URL(this.getNextURL)
+                const keyword = url.searchParams.get('keyword') || ''
+                const category = url.searchParams.get('category') || ''
+                const page = url.searchParams.get('page')
+                return this.$router.resolve({
+                    name: 'posts',
+                    query: {keyword, category, page}
+                }).route.fullPath
+            },
+            getKey() {
+                return `${this.postCurrentPageNumber} ${this.$route.query.keyword} ${this.$route.query.category}`
+            },
         },
         methods: {
             ...mapActions([UPDATE_POSTS]),
-            getPostPrevious() {
-                this.$http(this.getPreviousURL)
+            getPosts() {
+                let postURL = this.$httpPosts
+                const params = this.$route.query
+                const queryString = Object.keys(params).map(key => key + '=' + params[key]).join('&')
+                if (queryString) {
+                    postURL += '?' + queryString
+                }
+                this.$http(postURL, {credentials: "include",})
                     .then(response => {
                         return response.json()
                     })
@@ -43,24 +93,6 @@
                         this[UPDATE_POSTS](data)
                     })
             },
-            getPostNext() {
-                this.$http(this.getNextURL)
-                    .then(response => {
-                        return response.json()
-                    })
-                    .then(data => {
-                        this[UPDATE_POSTS](data)
-                    })
-            }
-        },
-        created() {
-            this.$http(this.$httpPosts)
-                .then(response => {
-                    return response.json()
-                })
-                .then(data => {
-                    this[UPDATE_POSTS](data)
-                })
         }
     }
 </script>
